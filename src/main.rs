@@ -3,8 +3,8 @@ use std::io;
 fn main() {
     let mut q: Vec<f64> = Vec::new();
 
+    print!("Enter input (q to quit): ");
     loop {
-        print!("Enter input (q to quit): ");
 
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
@@ -16,7 +16,7 @@ fn main() {
         }
 
         let inst = parse(input);
-        q = perform(q, inst);
+        perform(&mut q, inst);
     }
 
     println!("Goodbye!");
@@ -24,6 +24,14 @@ fn main() {
 
 fn parse(input: &str) -> Instructions {
     match input.trim().to_lowercase().as_str() {
+        s if s.starts_with("ldc ") => {
+            let num_str = &s[4..];
+            if let Ok(x) = num_str.trim().parse::<f64>() {
+                Instructions::Ldc(x)
+            } else {
+                Instructions::Unknown
+            }
+        },
         "add" => Instructions::Add,
         "sub" => Instructions::Sub,
         "mul" => Instructions::Mul,
@@ -38,7 +46,7 @@ fn parse(input: &str) -> Instructions {
     }
 }
 
-fn perform(mut q: Vec<f64>, instr: Instructions) -> Vec<f64> {
+fn perform(q: &mut Vec<f64>, instr: Instructions) {
     match instr {
         Instructions::Ldc(x) => {
             q.push(x);
@@ -56,7 +64,7 @@ fn perform(mut q: Vec<f64>, instr: Instructions) -> Vec<f64> {
                     eprintln!("Error: Division by zero.");
                     q.push(x);
                     q.push(y);
-                    return q;
+                    return;
                 }
                 x / y
                 }
@@ -98,8 +106,7 @@ fn perform(mut q: Vec<f64>, instr: Instructions) -> Vec<f64> {
             eprintln!("Unknown operation");
         }
     }
-
-    return q;
+    println!("{:?}", q);
 }
 
 enum Instructions {
