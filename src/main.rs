@@ -123,6 +123,8 @@ fn perform(q: &mut Vec<f64>, instr: Instruction) {
                     _ => unreachable!(),
                 };
                 q.push(result);
+            } else {
+                print_error();
             }
         }
         Instruction::Dup => {
