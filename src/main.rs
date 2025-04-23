@@ -159,6 +159,7 @@ fn perform(q: &mut Vec<f64>, v: &mut [f64;3],instr: Instruction) {
         Instruction::Stv(x) => {
             if x > v.len() {
                 print_error_out_of_bounds(x);
+                return;
             }
             if q.len() >= 1 {
                 v[x] = q.pop().unwrap();
