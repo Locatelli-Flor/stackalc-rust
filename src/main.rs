@@ -2,6 +2,7 @@ use std::io;
 
 fn main() {
     let mut q: Vec<f64> = Vec::new();
+    let mut v: [f64; 3] = [0., 0., 0.]; 
 
     println!("Enter input (q to quit): ");
     loop {
@@ -16,7 +17,7 @@ fn main() {
 
         let instructions: Vec<Instruction> = parse(input);
         for instr in instructions {
-            perform(&mut q, instr);
+            perform(&mut q, &mut v, instr);
         }
     }
 
@@ -32,14 +33,19 @@ fn parse(input: &str) -> Vec<Instruction> {
             continue;
         }
         let x = match instr.trim().to_lowercase().as_str() {
-            s if s.starts_with("ldc:") => {
-                let num_str = &s[4..];
+            s if s.starts_with("ldc:") || s.starts_with("ldv:") || s.starts_with("stv:") => {
+                let (prefix, num_str) = s.split_at(4);
                 if let Ok(x) = num_str.trim().parse::<f64>() {
-                    Instruction::Ldc(x)
+                    match prefix {
+                        "ldc:" => Instruction::Ldc(x),
+                        "ldv:" if x >= 0.0 && x.fract() == 0.0 => Instruction::Ldv(x as usize),
+                        "stv:" if x >= 0.0 && x.fract() == 0.0 => Instruction::Stv(x as usize),
+                        _ => Instruction::Unknown,
+                    }
                 } else {
                     Instruction::Unknown
                 }
-            }
+            },
             "add" => Instruction::Add,
             "sub" => Instruction::Sub,
             "mul" => Instruction::Mul,
@@ -57,7 +63,7 @@ fn parse(input: &str) -> Vec<Instruction> {
     return results;
 }
 
-fn perform(q: &mut Vec<f64>, instr: Instruction) {
+fn perform(q: &mut Vec<f64>, v: &mut [f64;3],instr: Instruction) {
     match instr {
         Instruction::Ldc(x) => {
             q.push(x);
@@ -83,7 +89,7 @@ fn perform(q: &mut Vec<f64>, instr: Instruction) {
                 };
                 q.push(result);
             } else {
-                print_error();
+                print_error_not_enough_elements();
             }
         }
         Instruction::Neg => {
@@ -91,7 +97,7 @@ fn perform(q: &mut Vec<f64>, instr: Instruction) {
                 let x: f64 = q.pop().unwrap();
                 q.push(-x);
             } else {
-                print_error();
+                print_error_not_enough_elements();
             }
         }
         Instruction::Ceq | Instruction::Cgt | Instruction::Clt => {
@@ -124,7 +130,7 @@ fn perform(q: &mut Vec<f64>, instr: Instruction) {
                 };
                 q.push(result);
             } else {
-                print_error();
+                print_error_not_enough_elements();
             }
         }
         Instruction::Dup => {
@@ -133,21 +139,38 @@ fn perform(q: &mut Vec<f64>, instr: Instruction) {
                 q.push(x);
                 q.push(x);
             } else {
-                print_error();
+                print_error_not_enough_elements();
             }
         }
         Instruction::Pop => {
             if q.len() >= 1 {
                 q.pop();
             } else {
-                print_error();
+                print_error_not_enough_elements();
             }
-        }
+        },   
+        Instruction::Ldv(x) => {
+            if x < v.len() {
+                q.push(v[x]);
+            } else {
+                print_error_out_of_bounds(x);
+            }
+        },
+        Instruction::Stv(x) => {
+            if x > v.len() {
+                print_error_out_of_bounds(x);
+            }
+            if q.len() >= 1 {
+                v[x] = q.pop().unwrap();
+            } else {
+                print_error_not_enough_elements();
+            }
+        },
         Instruction::Unknown => {
             eprintln!("Unknown operation");
-        }
+        },
     }
-    println!("{:?}", q);
+    println!("Queue: {:?}, Variables: {:?}", q, v);
 }
 
 enum Instruction {
@@ -163,8 +186,14 @@ enum Instruction {
     Dup,
     Pop,
     Unknown,
+    Ldv(usize),
+    Stv(usize)
 }
 
-fn print_error() {
+fn print_error_not_enough_elements() {
     eprintln!("Error: Not enough elements in the stack to perform operation.");
+}
+
+fn print_error_out_of_bounds(x: usize) {
+    eprintln!("Error: Index out of bounds for index {}", x); 
 }
