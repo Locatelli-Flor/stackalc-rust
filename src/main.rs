@@ -1,4 +1,5 @@
 use std::io;
+use rand::Rng;
 
 fn main() {
     let mut q: Vec<f64> = Vec::new();
@@ -17,7 +18,10 @@ fn main() {
 
         let instructions: Vec<Instruction> = parse(input);
         for instr in instructions {
-            perform(&mut q, &mut v, instr);
+            match instr {
+                Instruction::Ret => break,
+                _ => perform(&mut q, &mut v, instr),
+            }
         }
     }
 
@@ -56,6 +60,9 @@ fn parse(input: &str) -> Vec<Instruction> {
             "clt" => Instruction::Clt,
             "dup" => Instruction::Dup,
             "pop" => Instruction::Pop,
+            "nop" => Instruction::Nop,
+            "ret" => Instruction::Ret,
+            "rng" => Instruction::Rng,
             _ => Instruction::Unknown,
         };
         results.push(x);
@@ -167,6 +174,18 @@ fn perform(q: &mut Vec<f64>, v: &mut [f64;3],instr: Instruction) {
                 print_error_not_enough_elements();
             }
         },
+        Instruction::Nop => {
+            // Nada
+        },
+        Instruction::Ret => {
+            println!("Execution stopped!");
+            return;
+        },
+        Instruction::Rng => {
+            let mut rng = rand::rng();
+            let random_number: f64 = rng.random_range(0.0..=1.0);
+            q.push(random_number);
+        },
         Instruction::Unknown => {
             eprintln!("Unknown operation");
         },
@@ -188,7 +207,10 @@ enum Instruction {
     Pop,
     Unknown,
     Ldv(usize),
-    Stv(usize)
+    Stv(usize),
+    Nop,
+    Ret,
+    Rng
 }
 
 fn print_error_not_enough_elements() {
