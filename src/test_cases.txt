@@ -1,0 +1,37 @@
+ldc:1 ldc:2 mul dup ldc:10 clt brtrue:1 # Salida: Stack: [16.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:1 br:3 ldc:2 ldc:3 br:7 ldc:4 # Salida: Stack: [1.0, 3.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:1 ldc:2 ldc:3 stv:0 stv:1 stv:2 # Salida: Stack: [], Variables: [3.0, 2.0, 1.0]
+
+ldc:2 ldc:3 clt # Salida: Stack: [1.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:2 ldc:3 mul ldc:1 add # Salida: Stack: [7.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:5 ldc:3 sub dup ldc:0 clt brtrue:2 # Salida: Stack: [2.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:4 ldc:2 div ldc:3 mul # Salida: Stack: [6.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:10 ldc:2 ldc:5 add mul # Salida: Stack: [70.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:8 ldc:3 ldc:2 sub mul ldc:4 add # Salida: Stack: [12.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:6 ldc:2 mul ldc:3 div ldc:1 sub # Salida: Stack: [3.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:9 ldc:3 div ldc:2 mul ldc:1 add # Salida: Stack: [7.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:7 ldc:2 ldc:3 add mul ldc:4 sub # Salida: Stack: [17.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:5 ldc:5 mul ldc:10 div ldc:2 add # Salida: Stack: [4.5], Variables: [0.0, 0.0, 0.0]
+
+ldc:12 ldc:4 div ldc:3 mul ldc:2 sub # Salida: Stack: [7.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:15 ldc:3 ldc:5 sub mul ldc:2 div # Salida: Stack: [-15.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:0 brfalse:2 ldc:1 ldc:2 add # Salida: Stack: [3.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:1 ldc:2 ldc:3 sub dup ldc:0 clt brfalse:2 ldc:4 # Salida: Stack: [1.0, -1.0, 4.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:5 ldc:3 sub dup ldc:0 clt brtrue:2 ldc:10 # Salida: Stack: [2.0, 10.0], Variables: [0.0, 0.0, 0.0]
+
+ldc:2 ldc:2 mul ldc:4 sub dup ldc:0 clt brfalse:3 ldc:1 ldc:3 add # Salida: Stack: [-4.0, 4.0], Variables: [0.0, 0.0, 0.0]
