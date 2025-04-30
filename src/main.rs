@@ -1,7 +1,7 @@
 use std::io;
 
 fn main() {
-    let mut q: Vec<f64> = Vec::new();
+    let mut s: Vec<f64> = Vec::new();
     let mut v: [f64; 3] = [0., 0., 0.]; 
 
     println!("Enter input (q to quit): ");
@@ -16,7 +16,7 @@ fn main() {
         }
 
         let instructions: Vec<Instruction> = parse(input);
-        perform(&mut q, &mut v, instructions);
+        perform(&mut s, &mut v, instructions);
         
     }
 
@@ -85,19 +85,19 @@ fn parse(input: &str) -> Vec<Instruction> {
     return results;
 }
 
-fn perform(q: &mut Vec<f64>, v: &mut [f64; 3], instructions: Vec<Instruction>) {
+fn perform(s: &mut Vec<f64>, v: &mut [f64; 3], instructions: Vec<Instruction>) {
     let mut ip = 0;
 
     while ip < instructions.len() {
         let instr = &instructions[ip];
         match instr {
             Instruction::Ldc(x) => {
-                q.push(*x);
+                s.push(*x);
             }
             Instruction::Add | Instruction::Sub | Instruction::Mul | Instruction::Div => {
-                if q.len() >= 2 {
-                    let y = q.pop().unwrap();
-                    let x = q.pop().unwrap();
+                if s.len() >= 2 {
+                    let y = s.pop().unwrap();
+                    let x = s.pop().unwrap();
                     let result = match instr {
                         Instruction::Add => x + y,
                         Instruction::Sub => x - y,
@@ -105,8 +105,8 @@ fn perform(q: &mut Vec<f64>, v: &mut [f64; 3], instructions: Vec<Instruction>) {
                         Instruction::Div => {
                             if y == 0.0 {
                                 eprintln!("Error: Division by zero.");
-                                q.push(x);
-                                q.push(y);
+                                s.push(x);
+                                s.push(y);
                                 ip += 1;
                                 continue;
                             }
@@ -114,53 +114,53 @@ fn perform(q: &mut Vec<f64>, v: &mut [f64; 3], instructions: Vec<Instruction>) {
                         }
                         _ => unreachable!(),
                     };
-                    q.push(result);
+                    s.push(result);
                 } else {
                     print_error_not_enough_elements();
                 }
             }
             Instruction::Neg => {
-                if q.len() >= 1 {
-                    let x: f64 = q.pop().unwrap();
-                    q.push(-x);
+                if s.len() >= 1 {
+                    let x: f64 = s.pop().unwrap();
+                    s.push(-x);
                 } else {
                     print_error_not_enough_elements();
                 }
             }
             Instruction::Ceq | Instruction::Cgt | Instruction::Clt => {
-                if q.len() >= 2 {
-                    let x = q.pop().unwrap();
-                    let y = q.pop().unwrap();
+                if s.len() >= 2 {
+                    let x = s.pop().unwrap();
+                    let y = s.pop().unwrap();
                     let result = match instr {
                         Instruction::Ceq => (x == y) as i32 as f64,
                         Instruction::Cgt => (y > x) as i32 as f64,
                         Instruction::Clt => (y < x) as i32 as f64,
                         _ => unreachable!(),
                     };
-                    q.push(result);
+                    s.push(result);
                 } else {
                     print_error_not_enough_elements();
                 }
             }
             Instruction::Dup => {
-                if q.len() >= 1 {
-                    let x: f64 = q.pop().unwrap();
-                    q.push(x);
-                    q.push(x);
+                if s.len() >= 1 {
+                    let x: f64 = s.pop().unwrap();
+                    s.push(x);
+                    s.push(x);
                 } else {
                     print_error_not_enough_elements();
                 }
             }
             Instruction::Pop => {
-                if q.len() >= 1 {
-                    q.pop();
+                if s.len() >= 1 {
+                    s.pop();
                 } else {
                     print_error_not_enough_elements();
                 }
             }
             Instruction::Ldv(x) => {
                 if *x < v.len() {
-                    q.push(v[*x]);
+                    s.push(v[*x]);
                 } else {
                     print_error_out_of_bounds(*x);
                 }
@@ -168,8 +168,8 @@ fn perform(q: &mut Vec<f64>, v: &mut [f64; 3], instructions: Vec<Instruction>) {
             Instruction::Stv(x) => {
                 if *x >= v.len() {
                     print_error_out_of_bounds(*x);
-                } else if q.len() >= 1 {
-                    v[*x] = q.pop().unwrap();
+                } else if s.len() >= 1 {
+                    v[*x] = s.pop().unwrap();
                 } else {
                     print_error_not_enough_elements();
                 }
@@ -184,8 +184,8 @@ fn perform(q: &mut Vec<f64>, v: &mut [f64; 3], instructions: Vec<Instruction>) {
                 }
             }
             Instruction::BrFalse(x) => {
-                if q.len() >= 1 {
-                    let condition = q.pop().unwrap();
+                if s.len() >= 1 {
+                    let condition = s.pop().unwrap();
                     if condition == 0.0 {
                         if *x < instructions.len() {
                             ip = *x;
@@ -200,8 +200,8 @@ fn perform(q: &mut Vec<f64>, v: &mut [f64; 3], instructions: Vec<Instruction>) {
                 }
             }
             Instruction::BrTrue(x) => {
-                if q.len() >= 1 {
-                    let condition = q.pop().unwrap();
+                if s.len() >= 1 {
+                    let condition = s.pop().unwrap();
                     if condition != 0.0 {
                         if *x < instructions.len() {
                             ip = *x;
@@ -219,7 +219,7 @@ fn perform(q: &mut Vec<f64>, v: &mut [f64; 3], instructions: Vec<Instruction>) {
         ip += 1; // Move to the next instruction
     }
 
-    println!("Queue: {:?}, Variables: {:?}", q, v);
+    println!("Stack: {:?}, Variables: {:?}", s, v);
 }
 
 enum Instruction {
