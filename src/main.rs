@@ -16,9 +16,8 @@ fn main() {
         }
 
         let instructions: Vec<Instruction> = parse(input);
-        for instr in instructions {
-            perform(&mut q, &mut v, instr);
-        }
+        perform(&mut q, &mut v, instructions);
+        
     }
 
     println!("Goodbye!");
@@ -40,10 +39,33 @@ fn parse(input: &str) -> Vec<Instruction> {
                         "ldc:" => Instruction::Ldc(x),
                         "ldv:" if x >= 0.0 && x.fract() == 0.0 => Instruction::Ldv(x as usize),
                         "stv:" if x >= 0.0 && x.fract() == 0.0 => Instruction::Stv(x as usize),
-                        _ => Instruction::Unknown,
+                        _ => unreachable!()
                     }
                 } else {
-                    Instruction::Unknown
+                    continue;
+                }
+            },
+            s if s.starts_with("brfalse:") || s.starts_with("brtrue:") || s.starts_with("br:") => {
+                let parts: Vec<&str> = s.split(':').collect();
+                if parts.len() == 2 {
+                    let prefix = parts[0];
+                    let num_str = parts[1];
+                    if let Ok(x) = num_str.trim().parse::<f64>() {
+                        if x >= 0.0 && x.fract() == 0.0 {
+                            match prefix {
+                                "brfalse" => Instruction::BrFalse(x as usize),
+                                "brtrue" => Instruction::BrTrue(x as usize),
+                                "br" => Instruction::Br(x as usize),
+                                _ => continue
+                            }
+                        } else {
+                            continue;
+                        }
+                    } else {
+                        continue;
+                    }
+                } else {
+                    continue;
                 }
             },
             "add" => Instruction::Add,
@@ -56,121 +78,147 @@ fn parse(input: &str) -> Vec<Instruction> {
             "clt" => Instruction::Clt,
             "dup" => Instruction::Dup,
             "pop" => Instruction::Pop,
-            _ => Instruction::Unknown,
+            _ => continue
         };
         results.push(x);
     }
     return results;
 }
 
-fn perform(q: &mut Vec<f64>, v: &mut [f64;3],instr: Instruction) {
-    match instr {
-        Instruction::Ldc(x) => {
-            q.push(x);
-        }
-        Instruction::Add | Instruction::Sub | Instruction::Mul | Instruction::Div => {
-            if q.len() >= 2 {
-                let y = q.pop().unwrap();
-                let x = q.pop().unwrap();
-                let result = match instr {
-                    Instruction::Add => x + y,
-                    Instruction::Sub => x - y,
-                    Instruction::Mul => x * y,
-                    Instruction::Div => {
-                        if y == 0.0 {
-                            eprintln!("Error: Division by zero.");
-                            q.push(x);
-                            q.push(y);
-                            return;
+fn perform(q: &mut Vec<f64>, v: &mut [f64; 3], instructions: Vec<Instruction>) {
+    let mut ip = 0;
+
+    while ip < instructions.len() {
+        let instr = &instructions[ip];
+        match instr {
+            Instruction::Ldc(x) => {
+                q.push(*x);
+            }
+            Instruction::Add | Instruction::Sub | Instruction::Mul | Instruction::Div => {
+                if q.len() >= 2 {
+                    let y = q.pop().unwrap();
+                    let x = q.pop().unwrap();
+                    let result = match instr {
+                        Instruction::Add => x + y,
+                        Instruction::Sub => x - y,
+                        Instruction::Mul => x * y,
+                        Instruction::Div => {
+                            if y == 0.0 {
+                                eprintln!("Error: Division by zero.");
+                                q.push(x);
+                                q.push(y);
+                                ip += 1;
+                                continue;
+                            }
+                            x / y
                         }
-                        x / y
-                    }
-                    _ => unreachable!(),
-                };
-                q.push(result);
-            } else {
-                print_error_not_enough_elements();
+                        _ => unreachable!(),
+                    };
+                    q.push(result);
+                } else {
+                    print_error_not_enough_elements();
+                }
             }
-        }
-        Instruction::Neg => {
-            if q.len() >= 1 {
-                let x: f64 = q.pop().unwrap();
-                q.push(-x);
-            } else {
-                print_error_not_enough_elements();
+            Instruction::Neg => {
+                if q.len() >= 1 {
+                    let x: f64 = q.pop().unwrap();
+                    q.push(-x);
+                } else {
+                    print_error_not_enough_elements();
+                }
             }
-        }
-        Instruction::Ceq | Instruction::Cgt | Instruction::Clt => {
-            if q.len() >= 2 {
-                let x = q.pop().unwrap();
-                let y = q.pop().unwrap();
-                let result = match instr {
-                    Instruction::Ceq => {
-                        if x == y {
-                            1.0
+            Instruction::Ceq | Instruction::Cgt | Instruction::Clt => {
+                if q.len() >= 2 {
+                    let x = q.pop().unwrap();
+                    let y = q.pop().unwrap();
+                    let result = match instr {
+                        Instruction::Ceq => (x == y) as i32 as f64,
+                        Instruction::Cgt => (y > x) as i32 as f64,
+                        Instruction::Clt => (y < x) as i32 as f64,
+                        _ => unreachable!(),
+                    };
+                    q.push(result);
+                } else {
+                    print_error_not_enough_elements();
+                }
+            }
+            Instruction::Dup => {
+                if q.len() >= 1 {
+                    let x: f64 = q.pop().unwrap();
+                    q.push(x);
+                    q.push(x);
+                } else {
+                    print_error_not_enough_elements();
+                }
+            }
+            Instruction::Pop => {
+                if q.len() >= 1 {
+                    q.pop();
+                } else {
+                    print_error_not_enough_elements();
+                }
+            }
+            Instruction::Ldv(x) => {
+                if *x < v.len() {
+                    q.push(v[*x]);
+                } else {
+                    print_error_out_of_bounds(*x);
+                }
+            }
+            Instruction::Stv(x) => {
+                if *x >= v.len() {
+                    print_error_out_of_bounds(*x);
+                } else if q.len() >= 1 {
+                    v[*x] = q.pop().unwrap();
+                } else {
+                    print_error_not_enough_elements();
+                }
+            }
+            Instruction::Br(x) => {
+                if *x < instructions.len() {
+                    ip = *x;
+                    continue;
+                } else {
+                    println!("Program finished due to jump to a larger index.");
+                    break;
+                }
+            }
+            Instruction::BrFalse(x) => {
+                if q.len() >= 1 {
+                    let condition = q.pop().unwrap();
+                    if condition == 0.0 {
+                        if *x < instructions.len() {
+                            ip = *x;
+                            continue;
                         } else {
-                            0.0
+                            println!("Program finished due to jump to a larger index.");
+                            break;
                         }
                     }
-                    Instruction::Cgt => {
-                        if y > x {
-                            1.0
+                } else {
+                    print_error_not_enough_elements();
+                }
+            }
+            Instruction::BrTrue(x) => {
+                if q.len() >= 1 {
+                    let condition = q.pop().unwrap();
+                    if condition != 0.0 {
+                        if *x < instructions.len() {
+                            ip = *x;
+                            continue;
                         } else {
-                            0.0
+                            println!("Program finished due to jump to a larger index.");
+                            break;
                         }
                     }
-                    Instruction::Clt => {
-                        if y < x {
-                            1.0
-                        } else {
-                            0.0
-                        }
-                    }
-                    _ => unreachable!(),
-                };
-                q.push(result);
-            } else {
-                print_error_not_enough_elements();
-            }
+                } else {
+                    print_error_not_enough_elements();
+                }
+            } 
         }
-        Instruction::Dup => {
-            if q.len() >= 1 {
-                let x: f64 = q.pop().unwrap();
-                q.push(x);
-                q.push(x);
-            } else {
-                print_error_not_enough_elements();
-            }
-        }
-        Instruction::Pop => {
-            if q.len() >= 1 {
-                q.pop();
-            } else {
-                print_error_not_enough_elements();
-            }
-        },   
-        Instruction::Ldv(x) => {
-            if x < v.len() {
-                q.push(v[x]);
-            } else {
-                print_error_out_of_bounds(x);
-            }
-        },
-        Instruction::Stv(x) => {
-            if x > v.len() {
-                print_error_out_of_bounds(x);
-                return;
-            }
-            if q.len() >= 1 {
-                v[x] = q.pop().unwrap();
-            } else {
-                print_error_not_enough_elements();
-            }
-        },
-        Instruction::Unknown => {
-            eprintln!("Unknown operation");
-        },
+        ip += 1; // Move to the next instruction
     }
+
     println!("Queue: {:?}, Variables: {:?}", q, v);
 }
 
@@ -185,10 +233,12 @@ enum Instruction {
     Cgt,
     Clt,
     Dup,
-    Pop,
-    Unknown,
+    Pop, 
     Ldv(usize),
-    Stv(usize)
+    Stv(usize),
+    Br(usize),
+    BrTrue(usize),
+    BrFalse(usize)
 }
 
 fn print_error_not_enough_elements() {
